@@ -1,0 +1,5 @@
+
+streamlit
+reqpy_M 
+numpy
+matplotlib
