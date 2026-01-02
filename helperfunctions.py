@@ -1,4 +1,3 @@
-from turtle import st
 from typing import Tuple, List, Optional, Dict, Any
 import numpy as np
 import matplotlib.pyplot as plt
@@ -217,4 +216,5 @@ def call1colSave(outputfile_1col_1,outputfile_1col_2, txt_1col_filepath1,txt_1co
     with scc1:
         st.download_button("Save Spectrally Matched Record 1 as 1-Column TXT", outputfile_1col_1.getvalue(), file_name=txt_1col_filepath1, mime="text/csv",)        
     with scc2:
+
         st.download_button("Save Spectrally Matched Record 2 as 1-Column TXT", outputfile_1col_2.getvalue(), file_name=txt_1col_filepath2, mime="text/csv",)
