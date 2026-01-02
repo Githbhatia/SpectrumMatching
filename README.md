@@ -1,4 +1,4 @@
-Streamlit Spectrum Matching Application 
+# Streamlit Spectrum Matching Application 
 
 Has two page - one for single component matching and one for two component matching.
 Drag and drop target spectrum and earthquake records in PEER AT format.  
