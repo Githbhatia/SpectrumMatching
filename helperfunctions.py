@@ -1,11 +1,13 @@
+from turtle import st
 from typing import Tuple, List, Optional, Dict, Any
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
 import io
-
+import streamlit as st
 log = logging.getLogger(__name__)
 
+@st.cache_data
 def my_load_PEERNGA_record(f) -> Tuple[np.ndarray, float, int, str]:
     
     print(f)
@@ -50,11 +52,12 @@ def my_load_PEERNGA_record(f) -> Tuple[np.ndarray, float, int, str]:
 
     return acc, dt, npts, eqname
 
+@st.cache_data
 def my_save_results_as_at2(
     results: Dict[str, Any],
     comp_key: str = 'ccs',
     header_details: Optional[Dict[str, str]] = None
-) -> str:
+) -> io.StringIO:
     """Saves a matched acceleration time series in PEER .AT2 format.
 
     Parameters
@@ -106,8 +109,10 @@ def my_save_results_as_at2(
             filetxt += "\n"
     filetxt += "\n" # Final newline
     log.info(f"Successfully saved to text string for .AT2 format.")
-    return filetxt
+    output = io.StringIO(filetxt)
+    return output   
    
+@st.cache_data
 def my_save_results_as_2col(
     results: Dict[str, Any],
     comp_key: str = 'ccs',
@@ -156,6 +161,7 @@ def my_save_results_as_2col(
         log.error(f"Error saving 2-column file: {e}")
     return output 
 
+@st.cache_data
 def my_save_results_as_1col(
     results: Dict[str, Any],
     comp_key: str = 'ccs',
@@ -196,3 +202,19 @@ def my_save_results_as_1col(
     except Exception as e:
         log.error(f"Error saving 1-column file: {e}")
     return output 
+
+@st.fragment
+def callATSave(outputfile_1,outputfile_2, at2_filepath1,at2_filepath2): 
+    sc1,sc2=st.columns(2)
+    with sc1:
+        st.download_button("Save Spectrally Matched Record 1 as .AT2", outputfile_1.getvalue(), file_name=at2_filepath1, mime="text/csv",)
+    with sc2:
+        st.download_button("Save Spectrally Matched Record 2 as .AT2", outputfile_2.getvalue(), file_name=at2_filepath2, mime="text/csv",)
+
+@st.fragment
+def call1colSave(outputfile_1col_1,outputfile_1col_2, txt_1col_filepath1,txt_1col_filepath2):
+    scc1,scc2=st.columns(2)
+    with scc1:
+        st.download_button("Save Spectrally Matched Record 1 as 1-Column TXT", outputfile_1col_1.getvalue(), file_name=txt_1col_filepath1, mime="text/csv",)        
+    with scc2:
+        st.download_button("Save Spectrally Matched Record 2 as 1-Column TXT", outputfile_1col_2.getvalue(), file_name=txt_1col_filepath2, mime="text/csv",)
