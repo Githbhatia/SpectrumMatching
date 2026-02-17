@@ -17,6 +17,6 @@ Its primary capabilities include:
 * Analysis functions for generating standard and rotated (RotDnn) spectra.
 * Baseline correction routines for processed time histories.
 
-Streamlit app at the following location:
+You can use the Streamlit app at the following location:
 https://3n9ky89qr77jdaacdpdqzq.streamlit.app/
 
