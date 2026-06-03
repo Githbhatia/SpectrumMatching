@@ -1,6 +1,6 @@
 
 streamlit>=1.53.0
-reqpy_M=0.3.0
+reqpy_M==0.3.0
 numpy
 matplotlib
 Numba
