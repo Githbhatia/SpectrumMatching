@@ -8,7 +8,8 @@ Removes logging and defensive error handling around core functions for brevity.
 # Import necessary functions f
 from typing import Tuple, List, Optional, Dict, Any
 import streamlit as st
-from reqpy_M import (REQPY_single, plot_single_results)
+
+import reqpy_M
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 
 st.header("Single Component Spectrum Matching", divider="gray")
 st.write("Modifies a single component from a historic record so that the resulting response spectrum matches the specified design/target spectrum.")
-st.write ("Usess REQPY_single function from reqpy_M module.")
+st.write ("Uses generate_single_component_compatible_record function from reqpy_M module.")
 plt.close('all')
 # --- Configuration ---
 # Setup basic logging to see output from the module
@@ -43,7 +44,7 @@ else:
         seed_file=io.StringIO(filenames.read().decode("utf-8"))
 
 
-
+baseline_methods = ['none', 'classic', 'piecewise', 'sixth_order']
 cc1,cc2=st.columns(2)
 with cc1:
      dampratio=st.number_input("Damping ratio for spectra",value=0.05)
@@ -51,8 +52,8 @@ with cc1:
      TL2=st.number_input("Upper period limit for matching (s)",value=6.0)
 with cc2:
      nit_match=st.number_input("Number of matching iterations",value=15)
-     baseline_correct=st.checkbox("Perform baseline correction?",value=True)
-     p_order=st.number_input("Detrending order for baseline (-1 = none)",value=-1)
+     baseline_correct=st.selectbox("Select baseline correction method", options=baseline_methods, index=3)
+     p_order=st.number_input("Polynomial order for 'classic' baseline correction",value=4)
 
 
 
@@ -80,19 +81,21 @@ if target_spectrum.ndim != 2 or target_spectrum.shape[1] != 2:
 sort_idx = np.argsort(target_spectrum[:, 0])
 To = target_spectrum[sort_idx, 0]  # Target spectrum periods
 dso = target_spectrum[sort_idx, 1] # Target spectrum PSA
+targetPSAlimits = (0.9, 1.1) # Matching limits for target spectrum (e.g., 90% to 110%)
 
 # --- Perform Spectral Matching ---
-results = REQPY_single(
+results = reqpy_M.generate_single_component_compatible_record(
     s=s_orig,
     fs=fs,
-    dso=dso,
-    To=To,
-    T1=TL1,
-    T2=TL2,
+    T_PSA=To,
+    targetPSA=dso,
+    targetPSAlimits=targetPSAlimits,
+    T1PSA=TL1,
+    T2PSA=TL2,
     zi=dampratio,
     nit=nit_match,
-    baseline=baseline_correct,
-    porder=p_order)
+    baseline_method=baseline_correct,
+    PSA_poly_order=p_order)
 
 st.write("Spectral matching complete.")
 st.write(f"Final RMSE (pre-BC): {results['rmsefin']:.2f}%")
@@ -100,30 +103,27 @@ st.write(f"Final Misfit (pre-BC): {results['meanefin']:.2f}%")
 
 
 # --- Extract Results ---
-ccs = results['ccs']
-cvel = results['cvel']
-cdespl = results['cdespl']
+sc = results['sc']          
+sf = results['scale_factor']
+s_scaled = s_orig[:len(sc)] * sf  
 
 # --- Plot Results ---
 
-fig_hist, fig_spec = plot_single_results(
+fig_spec, fig_hist,x  = reqpy_M.plot_single_component_results(
     results=results,
-    s_orig=s_orig,
-    target_spec=(To, dso),
-    T1=TL1,
-    T2=TL2,
-    xlim_min=None,
-    xlim_max=None)
+    targetPSAlimits=targetPSAlimits,
+    T1PSA=TL1,
+    T2PSA=TL2,
+    zi=dampratio,
+    units='g')
+
+fig_spec.constrained_layout = True
+fig_hist.constrained_layout = True
 
 
-
-# Save and show plots
-# hist_filename = f"{output_base_name}_TimeHistories.png"
-# spec_filename = f"{output_base_name}_Spectra.png"
-# fig_hist.savefig(hist_filename, dpi=300)
-# fig_spec.savefig(spec_filename, dpi=300)
 st.pyplot(fig_spec) # Display plots
 st.pyplot(fig_hist) # Display plots
+# print(x) # Display plots
 
 
 
@@ -147,7 +147,7 @@ if saveR:
             'station': eqname.split('_comp_')[0] if '_comp_' in eqname else eqname,
             'component': f"{eqname.split('_comp_')[-1]}-Matched"
         }
-        outputfile = hf.my_save_results_as_at2(results, comp_key='ccs', header_details=at2_header_details)
+        outputfile = hf.my_save_results_as_at2(results, comp_key='sc', header_details=at2_header_details)
         st.download_button("Save Spectrally Matched Record as .AT2", outputfile.getvalue(), file_name=at2_filepath, mime="text/csv",)
 
     elif saveoption == "Save as 2-column (Time, Accel) .txt file":
@@ -157,7 +157,7 @@ if saveR:
                     f"Original Seed: {eqname}\n"
                     f"Target Spectrum: {target.name}\n"
                     f"Time (s), Acceleration (g)")
-        outputfile = hf.my_save_results_as_2col(results, comp_key='ccs', header_str=header_2col)
+        outputfile = hf.my_save_results_as_2col(results, comp_key='sc', header_str=header_2col)
         st.download_button("Save Spectrally Matched Record as 2-Column TXT", outputfile.getvalue(), file_name=txt_2col_filepath, mime="text/plain")
 
     else:
@@ -167,7 +167,7 @@ if saveR:
                     f"Original Seed: {eqname}\n"
                     f"Target Spectrum: {target.name}\n"
                     f"Data points follow:")
-        outputfile = hf.my_save_results_as_1col(results, comp_key='ccs', header_str=header_1col)
+        outputfile = hf.my_save_results_as_1col(results, comp_key='sc', header_str=header_1col)
         st.download_button("Save Spectrally Matched Record as 1-Column TXT", outputfile.getvalue(), file_name=txt_1col_filepath, mime="text/plain")
         
 

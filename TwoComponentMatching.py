@@ -12,7 +12,7 @@ This is the recommended approach for matching two components.
 # Import necessary functions 
 from typing import Tuple, List, Optional, Dict, Any
 import streamlit as st
-from reqpy_M import (REQPYrotdnn,  plot_rotdnn_results)
+import reqpy_M
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -59,8 +59,9 @@ with c2:
     else:
             seed_file2=io.StringIO(filenames2.read().decode("utf-8"))
 
-
+baseline_methods = ['none', 'classic', 'piecewise', 'sixth_order']
 cc1,cc2=st.columns(2)
+
 with cc1:
      dampratio=st.number_input("Damping ratio for spectra",value=0.05)
      TL1=st.number_input("Lower period limit for matching (s)",value=0.05)
@@ -68,8 +69,8 @@ with cc1:
 with cc2:
      nit_match=st.number_input("Number of matching iterations",value=15)
      nn = st.number_input("Percentile for RotD (e.g., 100 for RotD100)",value=100)
-     baseline_correct=st.checkbox("Perform baseline correction?",value=True)
-     p_order=st.number_input("Detrending order for baseline (-1 = none)",value=-1)
+     baseline_correct=st.selectbox("Select baseline correction method", options=baseline_methods, index=3)
+     p_order=st.number_input("Polynomial order for 'classic' baseline correction",value=4)
 
 # seed_file_1 = 'RSN175_IMPVALL.H_H-E12140.AT2' # Seed record comp1 [g]
 # seed_file_2 = 'RSN175_IMPVALL.H_H-E12230.AT2' # Seed record comp2 [g]
@@ -100,19 +101,19 @@ dso = target_spectrum[sort_idx, 1] # Target spectrum PSA
 
 # --- Perform Direct RotDnn Spectral Matching ---
 # Call the  REQPYrotdnn function
-results = REQPYrotdnn(
+results = reqpy_M.generate_rotdnn_compatible_record(
     s1=s1,
     s2=s2,
     fs=fs,
-    dso=dso,
-    To=To,
+    targetPSA=dso,
+    T_PSA=To,
     nn=nn,
-    T1=TL1,
-    T2=TL2,
+    T1PSA=TL1,
+    T2PSA=TL2,
     zi=dampratio,
     nit=nit_match,
-    baseline=baseline_correct,
-    porder=p_order)
+    baseline_method=baseline_correct,
+    PSA_poly_order=p_order)
 
 st.write("Spectral matching complete.")
 st.write(f"Final RMSE (pre-BC): {results.get('rmsefin', 'N/A'):.2f}%")
@@ -121,24 +122,20 @@ st.write(f"Final Misfit (pre-BC): {results.get('meanefin', 'N/A'):.2f}%")
 
 # --- Plot Results ---
 # Call the plotting function for RotDnn results
-fig_hist, fig_spec = plot_rotdnn_results(
-    results=results,
-    s1_orig=s1, # Pass original unscaled record 1
-    s2_orig=s2, # Pass original unscaled record 2
-    target_spec=(To, dso),
-    T1=TL1,
-    T2=TL2,
-    xlim_min=None,
-    xlim_max=None)
 
-# Save and show plots
-# hist_filename = f"{output_base_name}_TimeHistories.png"
-# spec_filename = f"{output_base_name}_Spectra.png"
-# fig_hist.savefig(hist_filename, dpi=300)
-# fig_spec.savefig(spec_filename, dpi=300)
-# print(f"Saved plots to {hist_filename} and {spec_filename}")
+fig_spec, fig_hist, fig_polar, fig_dir, _ = hf.my_plot_rotdnn_results(
+    results=results,
+    targetPSAlimits=dso,
+    T1PSA=TL1,
+    T2PSA=TL2,
+    zi=dampratio,
+    plot_directionality=True,
+    units='g')
+
 st.pyplot(fig_spec) # Display plots
 st.pyplot(fig_hist) # Display plots
+st.pyplot(fig_polar) # Display plots
+st.pyplot(fig_dir) # Display plots
 
 # --- Save Matched Records ---
 placeholder.write("Completed")
@@ -159,7 +156,7 @@ if saveR:
             'station': name1.split('_comp_')[0] if '_comp_' in name1 else name1,
             'component': f"{name1.split('_comp_')[-1]}-Matched"
         }
-        outputfile_1 = hf.my_save_results_as_at2(results, comp_key='scc1', header_details=at2_header1)
+        outputfile_1 = hf.my_save_results_as_at2(results, comp_key='sc1', header_details=at2_header1)
         
 
         # --- Save Component 2 ---
@@ -169,7 +166,7 @@ if saveR:
             'station': name2.split('_comp_')[0] if '_comp_' in name2 else name2,
             'component': f"{name2.split('_comp_')[-1]}-Matched"
         }
-        outputfile_2 = hf.my_save_results_as_at2(results, comp_key='scc2', header_details=at2_header2)
+        outputfile_2 = hf.my_save_results_as_at2(results, comp_key='sc2', header_details=at2_header2)
 
         hf.callATSave(outputfile_1,outputfile_2, at2_filepath1,at2_filepath2)
         
@@ -181,7 +178,7 @@ if saveR:
                         f"Original Seed: {name1}\n"
                         f"Target Spectrum: {target.name}\n"
                         f"Data points follow:")
-        outputfile_1col_1 = hf.my_save_results_as_1col(results, comp_key='scc1', header_str=header_1col_1)
+        outputfile_1col_1 = hf.my_save_results_as_1col(results, comp_key='sc1', header_str=header_1col_1)
         
         # --- Save Component 2 ---
         txt_1col_filepath2 = f"{output_base_name}_Comp2_Matched_1col.txt"
@@ -189,7 +186,7 @@ if saveR:
                         f"Original Seed: {name2}\n"
                         f"Target Spectrum: {target.name}\n"
                         f"Data points follow:")
-        outputfile_1col_2 = hf.my_save_results_as_1col(results, comp_key='scc2', header_str=header_1col_2)
+        outputfile_1col_2 = hf.my_save_results_as_1col(results, comp_key='sc2', header_str=header_1col_2)
 
         hf.call1colSave(outputfile_1col_1,outputfile_1col_2, txt_1col_filepath1,txt_1col_filepath2)
         
