@@ -27,7 +27,7 @@ plt.close('all')
 
 st.header("Two Component Spectrum Matching", divider="gray")
 st.write("Modifies two horizontal components from a historic record simultaneously so that the resulting RotD100 response spectrum (computed from the pair) matches the specified RotD100 design/target spectrum.")
-st.write ("Uses REQPYrotdnn function from reqpy_M module.")
+st.write ("Uses generate_rotdnn_compatible_record function from reqpy_M (0.4.0) module.")
 # --- Configuration ---
 # Setup basic logging to see output from the module
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -85,7 +85,7 @@ with cc2:
 output_base_name = filenames1.name[:-10]+'_'+target.name[:-4]+'_RotD'+str(nn) # Base name for output files
 saveR =False
 placeholder = st.empty()
-placeholder.write("Work in progress...")
+placeholder.write("This will take a few moments, working on it...")
 # --- Load target spectrum and seed record ---
 
 s1, dt, n1, name1 = hf.my_load_PEERNGA_record(seed_file1)
