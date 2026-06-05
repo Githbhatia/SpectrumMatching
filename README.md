@@ -18,7 +18,7 @@ Its primary capabilities include:
 * Baseline correction routines for processed time histories.
 
 
-6/5/2026:  Updated to use reqpy_M version 0.4.0 which is not backward compatible to vervious version.  Also had to duplicate some functions due to some missing modules in the package.
+6/5/2026:  Updated to use reqpy_M version 0.4.0 which is not backward compatible to vervious version.  Also had to duplicate some functions in helperfunctions.py due to some missing modules in the package.
 
 
 
