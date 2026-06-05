@@ -85,7 +85,7 @@ with cc2:
 output_base_name = filenames1.name[:-10]+'_'+target.name[:-4]+'_RotD'+str(nn) # Base name for output files
 saveR =False
 placeholder = st.empty()
-placeholder.write("This will take a few moments, working on it...")
+placeholder.write("This will take a few minutes, working on it...")
 # --- Load target spectrum and seed record ---
 
 s1, dt, n1, name1 = hf.my_load_PEERNGA_record(seed_file1)
