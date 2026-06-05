@@ -17,6 +17,11 @@ Its primary capabilities include:
 * Analysis functions for generating standard and rotated (RotDnn) spectra.
 * Baseline correction routines for processed time histories.
 
+
+6/5/2026:  Updated to use reqpy_M version 0.4.0 which is not backward compatible to vervious version.  Also had to duplicate some functions due to some missing modules in the package.
+
+
+
 You can use the Streamlit app at the following location:
 https://3n9ky89qr77jdaacdpdqzq.streamlit.app/
 
